@@ -2,6 +2,10 @@
 
 import streamlit as st
 import numpy as np
+
+# Fix: set matplotlib backend manually
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import re
 
