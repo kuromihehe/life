@@ -1,81 +1,111 @@
-# lifeforge_app.py
+# lifeforge_v2.py
 
 import streamlit as st
-import random
+import numpy as np
+import matplotlib.pyplot as plt
+import re
 
-st.set_page_config(page_title="LifeForge", layout="wide")
+st.set_page_config(page_title="LifeForge v2", layout="wide")
 
-st.title("🧠 LifeForge: AI-Enhanced Personal Journey Designer")
+st.title("💡 LifeForge: AI-Enhanced Personal Journey Designer (Prototype v2)")
 
-with st.form("life_input_form"):
-    st.header("Describe Two Life Paths You’re Considering")
+with st.form("life_options"):
+    st.subheader("Step 1: Define Two Life Options")
+    option1 = st.text_area("🅰️ Option 1", height=120)
+    option2 = st.text_area("🅱️ Option 2", height=120)
 
-    option1 = st.text_area("🔹 Life Path Option 1")
-    option2 = st.text_area("🔹 Life Path Option 2")
+    st.subheader("Step 2: Enter Your Profile")
+    age = st.slider("Your Age", 18, 70, 25)
+    personality = st.selectbox("Your Personality Trait", ["Resilient", "Ambitious", "Flexible"])
+    lifestyle_pref = st.slider("Importance of Lifestyle Quality", 1, 10, 5)
 
-    st.subheader("Your Profile")
-    age = st.slider("Age", 18, 70, 25)
-    personality = st.selectbox("Personality", ["Resilient", "Ambitious", "Flexible"])
-    lifestyle = st.slider("Importance of Lifestyle", 1, 10, 5)
+    simulate = st.form_submit_button("Run Simulation")
 
-    submitted = st.form_submit_button("Simulate")
-
-# Simple logic to score each option (placeholder)
-def simulate_life(option_text, age, personality, lifestyle):
-    # Fake NLP tags for demonstration
+# Simple theme extraction using keywords
+def interpret_option(text):
     themes = {
         "career": 0,
         "migration": 0,
         "passion": 0,
-        "stability": 0
+        "stability": 0,
+        "family": 0
     }
-    text = option_text.lower()
-    if "abroad" in text or "move" in text or "canada" in text:
-        themes["migration"] += 1
-    if "startup" in text or "business" in text or "dream" in text:
-        themes["passion"] += 1
-    if "salary" in text or "job" in text or "promotion" in text:
-        themes["career"] += 1
-    if "stay" in text or "home" in text or "parents" in text:
-        themes["stability"] += 1
+    keywords = {
+        "career": ["job", "salary", "promotion", "company", "income"],
+        "migration": ["abroad", "canada", "japan", "move", "relocate", "visa"],
+        "passion": ["dream", "startup", "art", "music", "business"],
+        "stability": ["stay", "safe", "secure", "known", "same"],
+        "family": ["parents", "support", "close", "home", "kids"]
+    }
 
-    # Simulated scores
-    happiness = random.randint(6, 10) if themes["passion"] else random.randint(3, 8)
-    income = random.randint(3000, 8000) if themes["career"] else random.randint(1500, 5000)
-    stress = random.randint(4, 8) if themes["migration"] else random.randint(2, 5)
+    for theme, keys in keywords.items():
+        for word in keys:
+            if re.search(rf"\b{word}\b", text.lower()):
+                themes[theme] += 1
+    return themes
 
-    # Final score logic
-    score = round((2 * happiness + 2 * income / 1000 - stress) / 5, 2)
+def simulate_outcomes(themes, lifestyle):
+    happiness = 5 + themes["passion"] + themes["family"]
+    income = 2000 + 1000 * themes["career"]
+    stress = 5 + themes["migration"] - themes["stability"]
+
+    # Adjust based on lifestyle preference
+    happiness += lifestyle // 3
+    stress -= lifestyle // 4
+
+    final_score = round((2 * happiness + 2 * income / 1000 - stress) / 5, 2)
 
     return {
-        "happiness": happiness,
+        "happiness": min(happiness, 10),
         "income": income,
-        "stress": stress,
-        "score": score
+        "stress": max(stress, 1),
+        "score": final_score
     }
 
-# Run simulation and show results
-if submitted:
-    st.divider()
-    st.subheader("🔍 Simulation Results")
+def display_results(title, result):
+    st.markdown(f"### {title}")
+    st.metric("🧘 Happiness", f"{result['happiness']}/10")
+    st.metric("💰 Income", f"${result['income']}")
+    st.metric("💢 Stress", f"{result['stress']}/10")
+    st.success(f"Final Score: {result['score']}")
 
-    result1 = simulate_life(option1, age, personality, lifestyle)
-    result2 = simulate_life(option2, age, personality, lifestyle)
+def draw_comparison_chart(results):
+    categories = ["Happiness", "Income", "Stress"]
+    values1 = [results[0]["happiness"], results[0]["income"], results[0]["stress"]]
+    values2 = [results[1]["happiness"], results[1]["income"], results[1]["stress"]]
+
+    x = np.arange(len(categories))
+    width = 0.35
+
+    fig, ax = plt.subplots()
+    ax.bar(x - width/2, values1, width, label='Option 1', color="#1f77b4")
+    ax.bar(x + width/2, values2, width, label='Option 2', color="#ff7f0e")
+    ax.set_ylabel('Scores')
+    ax.set_title('Option Comparison')
+    ax.set_xticks(x)
+    ax.set_xticklabels(categories)
+    ax.legend()
+
+    st.pyplot(fig)
+
+# Run if form submitted
+if simulate and option1 and option2:
+    st.subheader("🔍 Simulation Output")
+
+    themes1 = interpret_option(option1)
+    themes2 = interpret_option(option2)
+
+    result1 = simulate_outcomes(themes1, lifestyle_pref)
+    result2 = simulate_outcomes(themes2, lifestyle_pref)
 
     col1, col2 = st.columns(2)
-
     with col1:
-        st.markdown("### Option 1")
-        st.metric("Happiness", result1["happiness"])
-        st.metric("Income (USD)", result1["income"])
-        st.metric("Stress", result1["stress"])
-        st.success(f"Final Score: {result1['score']}")
-
+        display_results("🅰️ Option 1", result1)
     with col2:
-        st.markdown("### Option 2")
-        st.metric("Happiness", result2["happiness"])
-        st.metric("Income (USD)", result2["income"])
-        st.metric("Stress", result2["stress"])
-        st.success(f"Final Score: {result2['score']}")
+        display_results("🅱️ Option 2", result2)
 
-    st.markdown("✅ *Note: This is a prototype simulation. Scores are based on simplified logic and random values.*")
+    st.markdown("### 📊 Visual Comparison")
+    draw_comparison_chart([result1, result2])
+
+    st.info("ℹ️ This prototype is based on simplified keyword logic. In future versions, transformer-based NLP and real-world data will refine these results.")
+
