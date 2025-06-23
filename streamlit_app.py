@@ -1,11 +1,5 @@
-# lifeforge_v2.py
-
 import streamlit as st
 import numpy as np
-
-# Fix: set matplotlib backend manually
-import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import re
 
@@ -25,7 +19,6 @@ with st.form("life_options"):
 
     simulate = st.form_submit_button("Run Simulation")
 
-# Simple theme extraction using keywords
 def interpret_option(text):
     themes = {
         "career": 0,
@@ -52,11 +45,8 @@ def simulate_outcomes(themes, lifestyle):
     happiness = 5 + themes["passion"] + themes["family"]
     income = 2000 + 1000 * themes["career"]
     stress = 5 + themes["migration"] - themes["stability"]
-
-    # Adjust based on lifestyle preference
     happiness += lifestyle // 3
     stress -= lifestyle // 4
-
     final_score = round((2 * happiness + 2 * income / 1000 - stress) / 5, 2)
 
     return {
@@ -74,25 +64,27 @@ def display_results(title, result):
     st.success(f"Final Score: {result['score']}")
 
 def draw_comparison_chart(results):
-    categories = ["Happiness", "Income", "Stress"]
-    values1 = [results[0]["happiness"], results[0]["income"], results[0]["stress"]]
-    values2 = [results[1]["happiness"], results[1]["income"], results[1]["stress"]]
+    try:
+        categories = ["Happiness", "Income", "Stress"]
+        values1 = [results[0]["happiness"], results[0]["income"], results[0]["stress"]]
+        values2 = [results[1]["happiness"], results[1]["income"], results[1]["stress"]]
 
-    x = np.arange(len(categories))
-    width = 0.35
+        x = np.arange(len(categories))
+        width = 0.35
 
-    fig, ax = plt.subplots()
-    ax.bar(x - width/2, values1, width, label='Option 1', color="#1f77b4")
-    ax.bar(x + width/2, values2, width, label='Option 2', color="#ff7f0e")
-    ax.set_ylabel('Scores')
-    ax.set_title('Option Comparison')
-    ax.set_xticks(x)
-    ax.set_xticklabels(categories)
-    ax.legend()
+        fig, ax = plt.subplots()
+        ax.bar(x - width/2, values1, width, label='Option 1', color="#1f77b4")
+        ax.bar(x + width/2, values2, width, label='Option 2', color="#ff7f0e")
+        ax.set_ylabel('Scores')
+        ax.set_title('Option Comparison')
+        ax.set_xticks(x)
+        ax.set_xticklabels(categories)
+        ax.legend()
+        st.pyplot(fig)
+    except Exception as e:
+        st.error(f"❌ Failed to generate chart: {e}")
 
-    st.pyplot(fig)
-
-# Run if form submitted
+# Main logic
 if simulate and option1 and option2:
     st.subheader("🔍 Simulation Output")
 
@@ -111,5 +103,4 @@ if simulate and option1 and option2:
     st.markdown("### 📊 Visual Comparison")
     draw_comparison_chart([result1, result2])
 
-    st.info("ℹ️ This prototype is based on simplified keyword logic. In future versions, transformer-based NLP and real-world data will refine these results.")
-
+    st.info("ℹ️ Prototype based on keyword-based NLP. Future versions will use transformer-based models and real-world datasets.")
